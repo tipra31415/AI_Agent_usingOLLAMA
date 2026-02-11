@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from pydantic import BaseModel
+import json
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
@@ -44,12 +45,18 @@ agent=create_tool_calling_agent(
 
 agent_executor=AgentExecutor(agent=agent,tools=tools,verbose=True)
 query=input("What can i help you research?")
-# In your main.py, replace the parsing section with:
 raw_response = agent_executor.invoke({"query": query})
 
 
 try:
-    structured_response=parser.parse(raw_response.get("output")["text"])
+    output = raw_response.get("output")
+
+    if isinstance(output, dict):
+        text_output = output.get("text", json.dumps(output))
+    else:
+        text_output = str(output)
+
+    structured_response=parser.parse(text_output)
     print(structured_response)
 except Exception as e:
     print("Error parsing response",e,"Raw Response - ",raw_response)
